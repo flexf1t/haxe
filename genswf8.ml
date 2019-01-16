@@ -437,6 +437,7 @@ let free_reg ctx r p =
 
 let segment ctx =
 	ctx.segs <- (ctx.opcodes,ctx.idents) :: ctx.segs;
+	Printf.printf "New segment created. Segments count = %d\n" (List.length ctx.segs);
 	ctx.opcodes <- DynArray.create();
 	ctx.idents <- Hashtbl.create 0;
 	ctx.ident_count <- 0;
@@ -1221,6 +1222,7 @@ let gen_class_static_field ctx c flag f =
 			ctx.statics <- (c,flag,f.cf_name,e) :: ctx.statics
 
 let gen_class_static_init ctx (c,flag,name,e) =
+	if ctx.ident_size > ctx.com.static_segment_size then segment ctx;
 	ctx.curclass <- c;
 	ctx.curmethod <- (name,false);
 	getvar ctx (gen_path ctx c.cl_path c.cl_extern);
@@ -1327,7 +1329,7 @@ let gen_package ctx path ext =
 	loop [] (fst path)
 
 let gen_type_def ctx t =
-	if ctx.ident_size > 50000 then segment ctx;
+	if ctx.ident_size > ctx.com.segment_size then segment ctx;
 	match t with
 	| TClassDecl c ->
 		(match c.cl_init with
@@ -1477,7 +1479,7 @@ let build_tag (opcodes,idents) =
 	let idents = List.sort (fun (_,p1) (_,p2) -> compare p1 p2) idents in
 	let pidents = List.map (fun ((_,flag),_) -> flag) idents in
 	let idents = AStringPool (List.map (fun ((id,_),_) -> to_utf8 id) idents) in
-	if ActionScript.action_length idents >= 1 lsl 16 then failwith "The SWF can't handle more than a total size of 64K of identifers and literal strings. Try reducing this number by using external data files loaded at runtime";
+	if ActionScript.action_length idents >= 1 lsl 16 then failwith "The SWF can't handle more than a total size of 64K of identifers and literal strings (static also). Try reducing this number by using external data files loaded at runtime";
 	DynArray.set opcodes 0 idents;
 	TDoAction opcodes , pidents
 
@@ -1497,7 +1499,7 @@ let convert_header ctx ver (w,h,fps,bg) =
 	} , bg
 
 let default_header ctx ver =
-	convert_header ctx ver (400,300,30.,0xFFFFFF)
+	convert_header ctx ver (1,1,20.,0xFFFFFF)
 
 let generate com =
 	let ctx = {
@@ -1554,10 +1556,13 @@ let generate com =
 	ctx.reg_count <- 0;
 	(* ---- *)
 	List.iter (fun t -> gen_type_def ctx t) com.types;
+	segment ctx;
 	gen_boot ctx;
 	List.iter (fun m -> gen_movieclip ctx m) ctx.movieclips;
+	segment ctx;
 	ctx.static_init <- true;
 	List.iter (gen_expr ctx false) (List.rev ctx.inits);
+	segment ctx;
 	let global_try = gen_try ctx in
 	List.iter (gen_class_static_init ctx) (List.rev ctx.statics);
 	(match com.main with

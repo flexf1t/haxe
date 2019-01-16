@@ -741,6 +741,7 @@ let build_swf8 com codeclip exports =
 			incr cid;
 			tag ~ext:true (TClip { c_id = !cid; c_frame_count = 1; c_tags = [] }) ::
 			tag ~ext:true (TExport [{ exp_id = !cid; exp_name = ename }]) ::
+			(* tag ~ext:true (TDoInitAction { dia_id = !cid; dia_actions = ops }) :: *)
 			acc
 		end;
 	) [] clips in

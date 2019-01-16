@@ -929,6 +929,8 @@ try
 	let pre_compilation = ref [] in
 	let interp = ref false in
 	let swf_version = ref false in
+	let swf_segment = ref false in
+	let swf_static_segment = ref false in
 	Common.define_value com Define.HaxeVer (float_repres (float_of_int version /. 1000.));
 	Common.define_value com Define.HxcppApiLevel "311";
 	Common.raw_define com "haxe3";
@@ -1045,6 +1047,14 @@ try
 			if not !swf_version || com.flash_version < v then com.flash_version <- v;
 			swf_version := true;
 		),"<version> : change the SWF version (6 to 10)");
+		("-swf-segment-size",Arg.Int (fun v ->
+			if not !swf_segment then com.segment_size <- v;
+			swf_segment := true;
+		),"<size> : set maximum size of DoAction segment");
+		("-swf-static-segment-size",Arg.Int (fun v ->
+			if not !swf_static_segment then com.static_segment_size <- v;
+			swf_static_segment := true;
+		),"<size> : set maximum size of statid data (members and functions) DoAction segment");
 		("-swf-header",Arg.String (fun h ->
 			try
 				swf_header := Some (match ExtString.String.nsplit h ":" with

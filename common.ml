@@ -135,6 +135,8 @@ type context = {
 	(* output *)
 	mutable file : string;
 	mutable flash_version : float;
+	mutable segment_size : int;
+	mutable static_segment_size : int;
 	mutable features : (string,bool) Hashtbl.t;
 	mutable modules : Type.module_def list;
 	mutable main : Type.texpr option;
@@ -665,6 +667,8 @@ let create v args =
 		modules = [];
 		main = None;
 		flash_version = 10.;
+		segment_size = 50000;
+		static_segment_size = 50000;
 		resources = Hashtbl.create 0;
 		php_front = None;
 		php_lib = None;
